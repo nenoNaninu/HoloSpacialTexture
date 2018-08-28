@@ -20,20 +20,20 @@ namespace Neno.Scripts
     public class CameraManager : Singleton<CameraManager>
     {
         [SerializeField] private Text text;
-        private Texture2DArray texture2DArray;//GPUのメモリに保存される。
+        public Texture2DArray texture2DArray { get; private set; }//GPUのメモリに保存される。
 
         private PhotoCapture photoCaptureObject;
         private CameraParameters cameraParameters;
-        private Resolution resolution;
+        public Resolution Resolution { get; private set; }
 
-        private List<Matrix4x4> projectionMatrixList = new List<Matrix4x4>();
+        public List<Matrix4x4> projectionMatrixList { get; private set; } = new List<Matrix4x4>();
 
-        private List<Matrix4x4> world2CameraMatrixList = new List<Matrix4x4>();
+        public List<Matrix4x4> world2CameraMatrixList { get; private set; } = new List<Matrix4x4>();
         private int maxPhotoNum = 1;
 
         //GPUに優しくなるため、2^nにしておく。
-        private const int TEXTURE_WIDTH = 1024;
-        private const int TEXTURE_HEIGHT = 512;
+        public const int TEXTURE_WIDTH = 1024;
+        public const int TEXTURE_HEIGHT = 512;
 
         private int currentPhotoCount = 0;
 
@@ -51,13 +51,13 @@ namespace Neno.Scripts
         void Start()
         {
 
-            //this.resolution = PhotoCapture.SupportedResolutions.OrderByDescending((res => res.width * res.height)).First();
-            this.resolution = PhotoCapture.SupportedResolutions.First();//1280*720
+            //this.Resolution = PhotoCapture.SupportedResolutions.OrderByDescending((res => res.width * res.height)).First();
+            this.Resolution = PhotoCapture.SupportedResolutions.First();//1280*720
 
             this.cameraParameters = new CameraParameters(WebCamMode.PhotoMode)
             {
-                cameraResolutionHeight = resolution.height,
-                cameraResolutionWidth = resolution.width,
+                cameraResolutionHeight = Resolution.height,
+                cameraResolutionWidth = Resolution.width,
                 hologramOpacity = 0f,
                 pixelFormat = CapturePixelFormat.BGRA32
             };
@@ -170,6 +170,34 @@ namespace Neno.Scripts
         public void StopCamera()
         {
             photoCaptureObject?.StopPhotoModeAsync(OnStoppedPhotoMode);
+        }
+
+        /// <summary>
+        /// 投影座標空間上の点を-1~1から0~1に正規化したときに、入力された点がテクスチャ上にあるかどうかを判定する関数。
+        /// </summary>
+        /// <returns>入っていたらtureを返す</returns>
+        public bool CorrespondingPositionInTexture(Vector2 normalizedPosition)
+        {
+            if (normalizedPosition.x < (float)TEXTURE_WIDTH / this.Resolution.width && ((float)this.Resolution.height - TEXTURE_HEIGHT)/this.Resolution.height < normalizedPosition.y)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 投影座標上の点を-1~1から0~1に正規化したものを対応したもの引数に与えると画像上の点(0~1)で返す.
+        /// 左下原点(この段階でuvに変換したほうがいいかも？)
+        /// </summary>
+        /// <returns></returns>
+        public Vector2 ConvertTexturePoint(Vector2 normalizedPosition)
+        {
+            Vector2 vec2 = new Vector2();
+            vec2.x = normalizedPosition.x * this.Resolution.width / TEXTURE_WIDTH;
+            vec2.y = normalizedPosition.y * this.Resolution.height / TEXTURE_HEIGHT -
+                     (this.Resolution.height - TEXTURE_HEIGHT) / TEXTURE_HEIGHT;
+
+            return vec2;
         }
     }
 }
