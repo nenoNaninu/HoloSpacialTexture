@@ -72,7 +72,7 @@ public class LineBaseEditor : MRTKEditor
 
         if (DrawSectionStart(line.name + " Editor", "Editor Settings"))
         {
-            linePreviewResolutionSelected = EditorGUILayout.IntSlider("Preview resolution", linePreviewResolutionSelected, 3, 100);
+            linePreviewResolutionSelected = EditorGUILayout.IntSlider("Preview Resolution", linePreviewResolutionSelected, 3, 100);
 
             drawDottedLine = EditorGUILayout.Toggle("Draw Dotted Line", drawDottedLine);
             drawLinePoints = EditorGUILayout.Toggle("Draw Line Points", drawLinePoints);

@@ -26,11 +26,21 @@ namespace Neno.Scripts
                     meshObj.AddComponent<SpatialTexture>();
                 }
             };
+
+            CameraManager.Instance.UpdateTextureArray += ApplyAllTexture;
         }
 
-        public void ApplyAllTexture()
+        /// <summary>
+        /// 
+        /// </summary>
+        void ApplyAllTexture()
         {
-            
+            SpatialTexture[] spatialTextures = spatialMapping.GetComponentsInChildren<SpatialTexture>();
+
+            foreach (var spatialTexture in spatialTextures)
+            {
+                spatialTexture.ApplyTexture(CameraManager.Instance.texture2DArray, CameraManager.Instance.world2CameraMatrixList, CameraManager.Instance.projectionMatrixList);
+            }
         }
     }
 }
