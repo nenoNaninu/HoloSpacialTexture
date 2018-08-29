@@ -29,7 +29,7 @@ namespace Neno.Scripts
         public List<Matrix4x4> projectionMatrixList { get; private set; } = new List<Matrix4x4>();
 
         public List<Matrix4x4> world2CameraMatrixList { get; private set; } = new List<Matrix4x4>();
-        private int maxPhotoNum = 1;
+        private int maxPhotoNum = 10;
 
         //GPUに優しくなるため、2^nにしておく。
         public const int TEXTURE_WIDTH = 1024;
@@ -39,7 +39,7 @@ namespace Neno.Scripts
 
         private bool isCapturingPhoto = false;
 
-        public event Action OnTextureUpdated;
+        //public event Action OnTextureUpdated;
 
         public bool CanTakePhoto { get; set; } = false;
 
@@ -77,7 +77,6 @@ namespace Neno.Scripts
             //Graphics.CopyTexture(clearTexture, 0, 0, texture2DArray, 0, 0);
 
             PhotoCapture.CreateAsync(false, CreateCaptureObj);
-            this.CanTakePhoto = true;
         }
 
 
@@ -87,7 +86,7 @@ namespace Neno.Scripts
             this.photoCaptureObject.StartPhotoModeAsync(cameraParameters, _ => { });
         }
 
-        public void TakePhoto()
+        public void TakePhotoAsync()
         {
             if (this.isCapturingPhoto)
             {
@@ -97,7 +96,13 @@ namespace Neno.Scripts
             text.text += "start take photo\n";
 
             isCapturingPhoto = true;
-            this.photoCaptureObject.TakePhotoAsync(OnPhotoCaptured);
+            this.photoCaptureObject.TakePhotoAsync(this.OnPhotoCaptured);
+            //if (UpdateTextureArray != null)
+            //{     
+            //    UpdateTextureArray.Invoke();
+            //}
+
+
             isCapturingPhoto = false;
 
         }
@@ -140,8 +145,7 @@ namespace Neno.Scripts
             texture.Compress(true);//ここでの圧縮はDXTフォーマットに圧縮するということ。
             Graphics.CopyTexture(texture, 0, 0, texture2DArray, currentPhotoCount, 0);
             currentPhotoCount++;
-
-            OnTextureUpdated?.Invoke();
+            UpdateTextureArray();
             Resources.UnloadUnusedAssets();
         }
 

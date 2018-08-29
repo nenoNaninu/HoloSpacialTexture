@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using HoloToolkit.Unity;
 using HoloToolkit.Unity.InputModule;
+using HoloToolkit.Unity.SpatialMapping;
 using UnityEngine;
 
 namespace Neno.Scripts
@@ -12,7 +13,15 @@ namespace Neno.Scripts
         {
             if (CameraManager.Instance.CanTakePhoto)
             {
-                CameraManager.Instance.TakePhoto();
+                RaycastHit hitInfo;
+
+                if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hitInfo, Mathf.Infinity))
+                {
+                    if (hitInfo.transform.gameObject.layer == 31)
+                    {
+                        CameraManager.Instance.TakePhotoAsync();
+                    }
+                }
             }
         }
 
@@ -20,12 +29,6 @@ namespace Neno.Scripts
         void Start()
         {
             InputManager.Instance.AddGlobalListener(gameObject);
-        }
-
-        // Update is called once per frame
-        void Update()
-        {
-
         }
     }
 }
