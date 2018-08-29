@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using HoloToolkit.Unity;
 using HoloToolkit.Unity.SpatialMapping;
@@ -27,7 +28,7 @@ namespace Neno.Scripts
                 }
             };
 
-            CameraManager.Instance.UpdateTextureArray += ApplyAllTexture;
+            CameraManager.Instance.UpdateTextureArray = new Action(ApplyAllTexture);
         }
 
         /// <summary>
@@ -35,12 +36,17 @@ namespace Neno.Scripts
         /// </summary>
         void ApplyAllTexture()
         {
+            if (SpatialMappingManager.Instance.SurfaceMaterial != this.spatialTextureMaterial)
+            {
+                SpatialMappingManager.Instance.SurfaceMaterial = this.spatialTextureMaterial;
+            }
+
             SpatialTexture[] spatialTextures = spatialMapping.GetComponentsInChildren<SpatialTexture>();
 
-            foreach (var spatialTexture in spatialTextures)
-            {
-                spatialTexture.ApplyTexture(CameraManager.Instance.texture2DArray, CameraManager.Instance.world2CameraMatrixList, CameraManager.Instance.projectionMatrixList);
-            }
+            //foreach (var spatialTexture in spatialTextures)
+            //{
+            //    spatialTexture.ApplyTexture(CameraManager.Instance.texture2DArray, CameraManager.Instance.world2CameraMatrixList, CameraManager.Instance.projectionMatrixList);
+            //}
         }
     }
 }

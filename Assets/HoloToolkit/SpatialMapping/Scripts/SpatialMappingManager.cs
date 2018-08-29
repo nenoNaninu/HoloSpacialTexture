@@ -24,6 +24,8 @@ namespace HoloToolkit.Unity.SpatialMapping
         [SerializeField]
         private Material surfaceMaterial;
 
+
+
         [Tooltip("Determines if the surface observer should be automatically started.")]
         [SerializeField]
         private bool autoStartObserver = true;
