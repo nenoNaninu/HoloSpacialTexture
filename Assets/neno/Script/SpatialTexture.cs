@@ -45,6 +45,7 @@ namespace Neno.Scripts
 
                 for (int i = 0; i < photoNum; i++)
                 {
+                    //vをローカル座標から世界座標系に
                     Vector3 worldSpacePosition = transform.TransformPoint(new Vector3(v.x, v.y, v.z));
 
                     Matrix4x4 world2CameraMatrix = world2cameraList[i];
@@ -76,7 +77,7 @@ namespace Neno.Scripts
 
                     //プロジェクション行列かけられた空間は(普通)-1~1の空間の中。
                     //ここめっちゃわかりやすい。 http://marupeke296.com/DXG_No70_perspective.html
-                    if (Mathf.Abs(projectedPanelPosition.x) <= 1f && Mathf.Abs(projectedPanelPosition.y) <= 1f)
+                    if (Mathf.Abs(projectedPanelPosition.x) <= 2f && Mathf.Abs(projectedPanelPosition.y) <= 2f)
                     {
                         //-1~1の空間を0~1の空間に写像
                         Vector2 normalizedProjectPosition = 0.5f * Vector2.one + 0.5f * projectedPanelPosition;

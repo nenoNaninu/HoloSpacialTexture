@@ -16,17 +16,29 @@ namespace Neno.Scripts
         // Use this for initialization
         void Start()
         {
-            SpatialMappingObserver spatialMappingObserver = spatialMapping.GetComponent<SpatialMappingObserver>();
+            SpatialMappingSource[] spatialMappingObserver = spatialMapping.GetComponents<SpatialMappingSource>();
 
             //メッシュが増えたらそのメッシュのGameオブジェクトにSpatialTextureをAddComponetする。
-            spatialMappingObserver.SurfaceAdded += (sender, e) =>
+            foreach (var sc in spatialMappingObserver)
             {
-                GameObject meshObj = e.Data.Object;
-                if (meshObj.GetComponent<SpatialTexture>() == null)
+                sc.SurfaceAdded += (sender, e) =>
                 {
-                    meshObj.AddComponent<SpatialTexture>();
-                }
-            };
+                    GameObject meshObj = e.Data.Object;
+                    if (meshObj.GetComponent<SpatialTexture>() == null)
+                    {
+                        meshObj.AddComponent<SpatialTexture>();
+                    }
+                };
+
+                sc.SurfaceUpdated += (sender, e) =>
+                {
+                    var spatialTexture = e.Data.New.Object.GetComponent<SpatialTexture>();
+                    if (spatialTexture != null)
+                    {
+                        e.Data.New.Object.AddComponent<SpatialTexture>();
+                    }
+                };
+            }
 
             CameraManager.Instance.UpdateTextureArray = new Action(ApplyAllTexture);
         }
@@ -34,19 +46,19 @@ namespace Neno.Scripts
         /// <summary>
         /// 
         /// </summary>
-        void ApplyAllTexture()
+        public void ApplyAllTexture()
         {
-            if (SpatialMappingManager.Instance.SurfaceMaterial != this.spatialTextureMaterial)
+            if (SpatialUnderstanding.Instance.UnderstandingCustomMesh.MeshMaterial != this.spatialTextureMaterial)
             {
-                SpatialMappingManager.Instance.SurfaceMaterial = this.spatialTextureMaterial;
+                SpatialUnderstanding.Instance.UnderstandingCustomMesh.MeshMaterial = this.spatialTextureMaterial;
             }
 
             SpatialTexture[] spatialTextures = spatialMapping.GetComponentsInChildren<SpatialTexture>();
 
-            //foreach (var spatialTexture in spatialTextures)
-            //{
-            //    spatialTexture.ApplyTexture(CameraManager.Instance.texture2DArray, CameraManager.Instance.world2CameraMatrixList, CameraManager.Instance.projectionMatrixList);
-            //}
+            foreach (var spatialTexture in spatialTextures)
+            {
+                spatialTexture.ApplyTexture(CameraManager.Instance.texture2DArray, CameraManager.Instance.world2CameraMatrixList, CameraManager.Instance.projectionMatrixList);
+            }
         }
     }
 }

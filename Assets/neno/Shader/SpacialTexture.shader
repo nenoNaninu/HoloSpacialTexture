@@ -29,55 +29,65 @@
             struct appdata
             {
                 float4 vertex : POSITION;
-                float2 uv : TEXCOORD0;
                 uint id : SV_VertexID;
             };
 
-            struct v2f
-            {
-                float4 vertex : SV_POSITION;
-                float2 uv : TEXCOORD0;//xにテクスチャidx,yに頂点id
-                // UNITY_FOG_COORDS(1)
+            struct v2f {
+                float4 vertex : POSITION; //クリッピング空間に投影された頂点を格納(たぶん-1~1になる)
+                float2 uv : TEXCOORD0;    //uv配列に入っていたuv座標を
+                float2 uv2 : TEXCOORD1;   //テクスチャ番号(x)と頂点id(y)を格納
             };
 
             struct g2f
             {
-                float4 pos : SV_POSITION;
-                float2 uv : TEXCOORD0;
-                float2 uv2 : TEXCOORD1;
+                float4 pos : SV_POSITION; //pos使わないけどね
+                float2 uv : TEXCOORD0;    //uv座標
+                float2 uv2 : TEXCOORD1;   //xにテクスチャのidx入れる。yは使わない。
             };
 
-            UNITY_DECLARE_TEX2DARRAY(_TextureArray);
-
+            //頂点シェーダー
+            //頂点番号とテクスチャ番号と
             v2f vert (appdata v)
             {
                 v2f o;
-                o.vertex = UnityObjectToClipPos(v.vertex);//クリッピング空間上の座標に変換
-                //この段階ではuvにはテクスチャidと頂点idを突っ込んでおく。
-                o.uv.x = _TextureIndexArray[v.id];
-                o.uv.y = v.id;
+                o.vertex = UnityObjectToClipPos(v.vertex);//クリッピング空間の座標系に変換
+                o.uv = _UVArray[v.id];//uv座標入れてた配列のuvArray[index]
+                o.uv2.x = _TextureIndexArray[v.id]; //これはスコアが高かった画像のindexが入ってる。
+                o.uv2.y = v.id;//頂点id
                 return o;
             }
 
+            UNITY_DECLARE_TEX2DARRAY(_TextureArray);
+            
+            //ジオメトリシェーダー
+            //入力に3角のプリミティブな面を入力として各頂点についてみていく。
             [maxvertexcount(9)]
-            void geom(triangle v2f IN[3], inout TriangleStream<g2f> tristream)//ここ不必要なものいろいろありそうだからデバッグしていきたい。
+            void geom(triangle v2f IN[3], inout TriangleStream<g2f> tristream)
             {
                 bool existTexture = false;
                 g2f o;
-
-                for(int vertexIdx = 0; vertexIdx < 3; ++vertexIdx)//頂点毎に見ていって、他の頂点も同じテクスチャでuvの値持っていれば使い、持っていなければ使わない。
+                
+                //頂点毎に見ていって、他の頂点も同じテクスチャでuvの値持っていれば使い、持っていなければ使わない。
+                for(int vIndex = 0; vIndex < 3; ++vIndex)
                 {
-                    bool visible = true;
+                    bool visible = true; //vIndexが持っているテクスチャ番号を、他の2点も候補点を持っていればtrue。持ってなければfalse
                     for(int i = 0; i < 3; ++i)
                     {
-                        uint vertexId = floor(IN[i].uv.x);
-                        uint textureId = floor(IN[vertexIdx].uv.x);
+                        uint vertexId = floor(IN[i].uv2.y);
+                        uint textureId = floor(IN[vIndex].uv2.x);
 
-                        float2 uv = _UVArray[_TextureCount * vertexId + textureId];
-
-                        if(uv.x < -0.5 || uv.y < -0.5)
+                        if(textureId < 0)//該当テクスチャがなければ-1が入っている
                         {
                             visible = false;
+                        }
+                        else
+                        {
+                            float2 uv = _UVArray[_TextureCount * vertexId + textureId];
+
+                            if(uv.x < -0.5 || uv.y < -0.5)//まともなではないuvが入ってる場合は-1が入ってる。
+                            {
+                                visible = false;
+                            }
                         }
                     }
                     if(visible){
@@ -85,45 +95,50 @@
 
                         for(int i = 0; i < 3; ++i)
                         {                        
-                            uint vertexId = floor(IN[i].uv.x);
-                            uint textureId = floor(IN[vertexIdx].uv.x);
+                            uint vertexId = floor(IN[i].uv2.y);
+                            uint textureId = floor(IN[vIndex].uv2.x);
                             
                             o.pos = IN[i].vertex;
 
                             o.uv = _UVArray[_TextureCount * vertexId + textureId];
-                            o.uv2.x = floor(IN[vertexIdx].uv.x);
+                            o.uv2.x = textureId;
                             o.uv2.y = -1;
                             tristream.Append(o);
                         }
 
-                        tristream.RestartStrip();
+                        tristream.RestartStrip();//break的な感じの理解でよろしいのだろうか。
                     }
                 }
 
+                //表示するべきテクスチャがいい感じ
                 if(!existTexture){
                     for(int i = 0; i< 3; ++i)
                     {
                         o.pos = IN[i].vertex;
                         o.uv = float2(-1,-1);
+                        o.uv2 = float2(-1,-1);
                         tristream.Append(o);
                     }
                     tristream.RestartStrip();
                 }
             }
-               
+        
+            //フラグメントシェーダ
+            //頂点のuv座標とテクスチャのindex
             fixed4 frag (g2f i) : SV_Target
             {
                 fixed4 color = fixed4(0, 0, 0, 0);
+                uint textureIdex = floor(i.uv2.x);
 
-                if (i.uv.x < 0 || i.uv.x > 1 || i.uv.y < 0 || i.uv.y > 1) 
+                if (i.uv.x < 0 || i.uv.x > 1 || i.uv.y < 0 || i.uv.y > 1 || textureIdex < 0)
                 {
                    return color;
                 }
 
-                uint index = floor(i.uv2.x);
-                float3 uvz = float3(i.uv.x, i.uv.y, index);
-
-                color = UNITY_SAMPLE_TEX2DARRAY(_TextureArray, uvz);
+                float3 uvz = float3(i.uv.x, i.uv.y, textureIdex);
+                if (!any(saturate(i.uv) - i.uv)) {
+                    color = UNITY_SAMPLE_TEX2DARRAY(_TextureArray, uvz);
+                }
                 return color;
             }
             ENDCG

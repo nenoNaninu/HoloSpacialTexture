@@ -20,6 +20,8 @@ namespace Neno.Scripts
     public class CameraManager : Singleton<CameraManager>
     {
         [SerializeField] private Text text;
+        [SerializeField] private GameObject textureViewrObj;
+
         public Texture2DArray texture2DArray { get; private set; }//GPUのメモリに保存される。
 
         private PhotoCapture photoCaptureObject;
@@ -63,22 +65,9 @@ namespace Neno.Scripts
             };
 
             this.texture2DArray = new Texture2DArray(TEXTURE_WIDTH, TEXTURE_HEIGHT, this.maxPhotoNum, TextureFormat.DXT5, false);//DXT5がDirectXが良しなにするためのフォーマット
-            //var clearTexture = new Texture2D(TEXTURE_WIDTH, TEXTURE_HEIGHT, TextureFormat.ARGB32, false);
-
-            //var resetClearArray = clearTexture.GetPixels();
-
-            //for (int i = 0; i < resetClearArray.Length; i++)
-            //{
-            //    resetClearArray[i] = Color.clear;
-            //}
-            //clearTexture.SetPixels(resetClearArray);
-            //clearTexture.Apply();
-            //clearTexture.Compress(true);
-            //Graphics.CopyTexture(clearTexture, 0, 0, texture2DArray, 0, 0);
 
             PhotoCapture.CreateAsync(false, CreateCaptureObj);
         }
-
 
         void CreateCaptureObj(PhotoCapture captureObject)
         {
@@ -97,13 +86,6 @@ namespace Neno.Scripts
 
             isCapturingPhoto = true;
             this.photoCaptureObject.TakePhotoAsync(this.OnPhotoCaptured);
-            //if (UpdateTextureArray != null)
-            //{     
-            //    UpdateTextureArray.Invoke();
-            //}
-
-
-            isCapturingPhoto = false;
 
         }
 
@@ -134,6 +116,7 @@ namespace Neno.Scripts
 
             texture.wrapMode = TextureWrapMode.Clamp;
             texture = CropTexture(texture, TEXTURE_WIDTH, TEXTURE_HEIGHT);
+            this.textureViewrObj.GetComponent<Renderer>().material.mainTexture = texture;
             photoCaptureFrame.Dispose();
 
             //var bytes = texture.EncodeToPNG();
@@ -145,8 +128,12 @@ namespace Neno.Scripts
             texture.Compress(true);//ここでの圧縮はDXTフォーマットに圧縮するということ。
             Graphics.CopyTexture(texture, 0, 0, texture2DArray, currentPhotoCount, 0);
             currentPhotoCount++;
-            UpdateTextureArray();
+            if (UpdateTextureArray != null)
+            {
+                UpdateTextureArray();
+            }
             Resources.UnloadUnusedAssets();
+            isCapturingPhoto = false;
         }
 
         /// <summary>

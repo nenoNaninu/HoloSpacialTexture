@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using HoloToolkit.Unity;
 using HoloToolkit.Unity.SpatialMapping;
 using Neno.Scripts;
 using UnityEngine;
@@ -35,13 +36,16 @@ namespace Neno.Scripts
             this.isSpacialMappingUpdate = !this.isSpacialMappingUpdate;
             if (this.isSpacialMappingUpdate)
             {
-                SpatialMappingManager.Instance.StartObserver();
+                //SpatialMappingManager.Instance.StartObserver();
+                SpatialUnderstanding.Instance.RequestBeginScanning();
                 FlipCameraActive();
             }
             else
             {
-                SpatialMappingManager.Instance.StopObserver();
+                //SpatialMappingManager.Instance.StopObserver();
+                SpatialUnderstanding.Instance.RequestFinishScan();
                 FlipCameraActive();
+                //SpatialTextureManager.Instance.ApplyAllTexture();
             }
         }
 
